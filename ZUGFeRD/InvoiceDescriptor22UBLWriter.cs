@@ -200,15 +200,66 @@ namespace s2industries.ZUGFeRD
 
 
             #region SellerTradeParty
-            //AccountingSupplierParty
+
+            // AccountingSupplierParty = PartyTypes.SellerTradeParty
             _writeOptionalParty(Writer, PartyTypes.SellerTradeParty, this.Descriptor.Seller, this.Descriptor.SellerContact, this.Descriptor.SellerElectronicAddress, this.Descriptor.SellerTaxRegistration);
             #endregion
 
             #region BuyerTradeParty
-            //AccountingCustomerParty
+            //AccountingCustomerParty = PartyTypes.BuyerTradeParty
             _writeOptionalParty(Writer, PartyTypes.BuyerTradeParty, this.Descriptor.Buyer, this.Descriptor.BuyerContact, this.Descriptor.BuyerElectronicAddress, this.Descriptor.BuyerTaxRegistration);
             #endregion
-            
+
+
+            // Deliery = ShipToTradeParty
+            if ((this.Descriptor.ShipTo != null) || (this.Descriptor.ActualDeliveryDate.HasValue))
+            {
+                Writer.WriteStartElement("cac", "Delivery");
+
+                if (this.Descriptor.ActualDeliveryDate.HasValue)
+                {                 
+                    Writer.WriteStartElement("cbc", "ActualDeliveryDate");
+                    Writer.WriteValue(_formatDate(this.Descriptor.ActualDeliveryDate.Value, false, true));
+                    Writer.WriteEndElement(); // !ActualDeliveryDate                 
+                }
+
+                if (this.Descriptor.ShipTo != null)
+                {
+                    Writer.WriteStartElement("cac", "DeliveryLocation");
+
+                    if (this.Descriptor.ShipTo.ID != null) // despite this is a mandatory field, the component should not throw an exception if this is not the case
+                    {
+                        Writer.WriteOptionalElementString("cbc", "ID", this.Descriptor.ShipTo.ID.ID);
+                    }
+                    Writer.WriteStartElement("cac", "Address");
+                    Writer.WriteOptionalElementString("cbc", "StreetName", this.Descriptor.ShipTo.Street);
+                    Writer.WriteOptionalElementString("cbc", "AdditionalStreetName", this.Descriptor.ShipTo.AddressLine3);
+                    Writer.WriteOptionalElementString("cbc", "CityName", this.Descriptor.ShipTo.City);
+                    Writer.WriteOptionalElementString("cbc", "PostalZone", this.Descriptor.ShipTo.Postcode);
+                    Writer.WriteOptionalElementString("cbc", "CountrySubentity", this.Descriptor.ShipTo.CountrySubdivisionName);
+                    Writer.WriteStartElement("cac", "Country");
+                    if (this.Descriptor.ShipTo.Country != CountryCodes.Unknown)
+                    {
+                        Writer.WriteElementString("cbc", "IdentificationCode", this.Descriptor.ShipTo.Country.ToString());
+                    }
+                    Writer.WriteEndElement(); //!Country
+                    Writer.WriteEndElement(); // !Address
+                    Writer.WriteEndElement(); // !DeliveryLocation
+
+                    if (!string.IsNullOrWhiteSpace(this.Descriptor.ShipTo.Name))
+                    {
+                        Writer.WriteStartElement("cac", "DeliveryParty");
+                        Writer.WriteStartElement("cac", "PartyName");
+                        Writer.WriteStartElement("cbc", "Name");
+                        Writer.WriteValue(this.Descriptor.ShipTo.Name);
+                        Writer.WriteEndElement(); // !Name
+                        Writer.WriteEndElement(); // !PartyName
+                        Writer.WriteEndElement(); // !DeliveryParty
+                    }
+                }
+            }
+
+
             #region AllowanceCharge
             foreach (TradeAllowanceCharge tradeAllowanceCharge in descriptor.GetTradeAllowanceCharges())
             {
@@ -249,10 +300,9 @@ namespace s2industries.ZUGFeRD
 
                 Writer.WriteEndElement(); // !AllowanceCharge()
             }
-            #endregion
+            #endregion            
 
             // PaymentMeans
-
             if (this.Descriptor.PaymentMeans != null)
             {
 
@@ -544,39 +594,8 @@ namespace s2industries.ZUGFeRD
                     break;
                 case PartyTypes.ShipFromTradeParty:
                     return;
-                //case PartyTypes.ShipToTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
-                //case PartyTypes.UltimateShipToTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
-                //case PartyTypes.ShipFromTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
-                //case PartyTypes.InvoiceeTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
-                //case PartyTypes.PayeeTradeParty:
-                //    if (this.Descriptor.Profile == Profile.Minimum) { return; } // party is written for all profiles but minimum
-                //    break;
-                //case PartyTypes.SalesAgentTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
-                //case PartyTypes.BuyerTaxRepresentativeTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
-                //case PartyTypes.ProductEndUserTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
-                //case PartyTypes.BuyerAgentTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
-                //case PartyTypes.InvoicerTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
-                //case PartyTypes.PayerTradeParty:
-                //    if ((this.Descriptor.Profile != Profile.Extended) && (this.Descriptor.Profile != Profile.XRechnung1) && (this.Descriptor.Profile != Profile.XRechnung)) { return; } // extended, XRechnung1, XRechnung profile only
-                //    break;
+                case PartyTypes.ShipToTradeParty: // ship to trade party/ cac:Delivery has very minimized information, thus generic _writeOptionalParty() cannot be used
+                    return;
                 default:
                     return;
             }
@@ -646,9 +665,16 @@ namespace s2industries.ZUGFeRD
                     writer.WriteAttributeString("schemeID", "SEPA");
                     writer.WriteValue(this.Descriptor.PaymentMeans.SEPACreditorIdentifier);
                     writer.WriteEndElement();//!ID
-
-
                     writer.WriteEndElement();//!PartyIdentification
+                }
+
+                if (!string.IsNullOrWhiteSpace(party.Name))
+                {
+                    writer.WriteStartElement("cac", "PartyName");
+                    writer.WriteStartElement("cbc", "Name");
+                    writer.WriteValue(party.Name);
+                    writer.WriteEndElement();//!Name
+                    writer.WriteEndElement();//!PartyName
                 }
 
                 writer.WriteStartElement("cac", "PostalAddress");
@@ -659,12 +685,10 @@ namespace s2industries.ZUGFeRD
                 Writer.WriteOptionalElementString("cbc", "CountrySubentity", party.CountrySubdivisionName);
 
                 writer.WriteStartElement("cac", "Country");
-
                 if (party.Country != CountryCodes.Unknown)
                 {
                     Writer.WriteElementString("cbc", "IdentificationCode", party.Country.ToString());
                 }
-
                 writer.WriteEndElement(); //!Country
 
                 writer.WriteEndElement(); //!PostalTradeAddress
@@ -672,22 +696,16 @@ namespace s2industries.ZUGFeRD
 
                 foreach (var tax in taxRegistrations)
                 {
-                    writer.WriteStartElement("cac", "PartyTaxScheme");
-
+                    Writer.WriteStartElement("cac", "PartyTaxScheme");
                     Writer.WriteElementString("cbc", "CompanyID", tax.No);
-
-                    writer.WriteStartElement("cac", "TaxScheme");
-
+                    Writer.WriteStartElement("cac", "TaxScheme");
                     Writer.WriteElementString("cbc", "ID", UBLTaxRegistrationSchemeIDMapper.Map(tax.SchemeID));
-
-                    writer.WriteEndElement(); //!TaxScheme
-
-                    writer.WriteEndElement(); //!PartyTaxScheme
+                    Writer.WriteEndElement(); //!TaxScheme
+                    Writer.WriteEndElement(); //!PartyTaxScheme
                 }
 
 
                 writer.WriteStartElement("cac", "PartyLegalEntity");
-
                 writer.WriteElementString("cbc", "RegistrationName", party.Name);
 
                 if (party.GlobalID != null)
@@ -701,12 +719,10 @@ namespace s2industries.ZUGFeRD
                 if (contact != null)
                 {
                     writer.WriteStartElement("cac", "Contact");
-
                     writer.WriteOptionalElementString("cbc", "Name", contact.Name);
                     writer.WriteOptionalElementString("cbc", "Telephone", contact.PhoneNo);
                     writer.WriteOptionalElementString("cbc", "ElectronicMail", contact.EmailAddress);
-
-                    writer.WriteEndElement();
+                    writer.WriteEndElement(); // !Contact
                 }
 
                 writer.WriteEndElement(); //!Party
